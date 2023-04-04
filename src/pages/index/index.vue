@@ -42,6 +42,8 @@ interface ShowType {
 onReady(() => {
   const cheight: number = uni.getSystemInfoSync().windowHeight
   content.value && (content.value.style.height = cheight * 0.9 + 'px')
+	if(!uni.getStorageSync("sysPW"))
+	infoShow("首次登陆的话，直接输入就可以记录密码")
   // uni.clearStorage()
   // AES_Decrypt(AES_Encrypt("1123qweqwe"))
 })
@@ -63,11 +65,6 @@ const showPW = reactive<ShowType>({
 })
 // 更改输入框的显示状态
 const changePWStatus = function () {
-  uni.navigateTo({
-    url: '../pwsystem/index',
-    animationType: 'fade-in',
-    animationDuration: 7000
-  })
   if (showPW.inpType === 'password') {
     showPW.inpType = 'text'
     showPW.iconType = 'eye'
@@ -86,6 +83,11 @@ const subPassword = function () {
     const sysPW = uni.getStorageSync('sysPW')
     if (sysPW && proxy.$md5(inpValue.value) === sysPW) {
       infoShow('验证成功')
+      uni.navigateTo({
+        url: '../pwsystem/index',
+        animationType: 'fade-in',
+        animationDuration: 7000
+      })
     } else if (!sysPW) {
       infoShow('请设置重置密码的问题')
       uni.setStorageSync('sysPW', proxy.$md5(inpValue.value))
