@@ -1,6 +1,6 @@
 <template>
   <div id="add-button">
-    <uni-icons type="plusempty" color="rgba(255,255,255,0.7)" size="35"></uni-icons>
+    <uni-icons type="plusempty" color="rgba(255,255,255,0.7)" size="35" @click="showInsert"></uni-icons>
   </div>
   <search-box></search-box>
   <insert-pw v-if="insertShow" @closeBox="insertShow = false"></insert-pw>
@@ -14,6 +14,9 @@ import insertPw from '/src/components/insert-pw/index.vue'
 import pwList from '/src/components/pw-list/index.vue'
 
 const insertShow = ref<boolean>(false)
+const showInsert = function() {
+  insertShow.value = true
+}
 </script>
 
 <style lang="scss">
