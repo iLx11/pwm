@@ -1,6 +1,6 @@
 <template>
   <header>_iLx1_</header>
-  <div class="content" ref="content">
+  <div class="content" :style="{height: contentH}">
     <div class="headImg"></div>
     <div class="glass"></div>
     <div class="pw-content">
@@ -32,16 +32,18 @@
 
 <script setup lang="ts">
 import { onReady } from '@dcloudio/uni-app'
-import { reactive, ref, getCurrentInstance } from 'vue'
+import { reactive, ref, getCurrentInstance, onMounted } from 'vue'
 // import centerPage from '/src/components/center-page/index.vue'
 import resetPw from '/src/components/reset-pw/index.vue'
 interface ShowType {
   inpType: string
   iconType: string
 }
-onReady(() => {
+const contentH = ref<string>('')
+onMounted(() => {
   const cheight: number = uni.getSystemInfoSync().windowHeight
-  content.value && (content.value.style.height = cheight * 0.9 + 'px')
+  // content.value && (content.value.style.height = cheight * 0.9 + 'px')
+  contentH.value =  cheight * 0.9 + 'px'
 	if(!uni.getStorageSync("sysPW"))
 	infoShow("首次登陆的话，直接输入就可以记录密码")
   // uni.clearStorage()
@@ -86,7 +88,7 @@ const subPassword = function () {
       uni.navigateTo({
         url: '../pwsystem/index',
         animationType: 'fade-in',
-        animationDuration: 7000
+        animationDuration: 200
       })
     } else if (!sysPW) {
       infoShow('请设置重置密码的问题')
