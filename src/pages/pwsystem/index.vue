@@ -3,14 +3,21 @@
     <uni-icons type="plusempty" color="rgba(255,255,255,0.7)" size="35" @click="showInsert"></uni-icons>
   </div>
   <!-- <div> -->
-    <search-box :pwListLength="pwLength"></search-box>
-    <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW"></insert-pw>
-    <pw-list :pwList="pwListData" @delPW="deletePW" @editPW="editCurPW"></pw-list>
+  <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan"></search-box>
+  <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW"></insert-pw>
+  <pw-list :pwList="pwListData" @delPW="deletePW" @editPW="editCurPW" @infoWarn="infoShow"></pw-list>
   <!-- </div> -->
+  <uni-popup ref="popup" type="message">
+    <uni-popup-message type="info" :message="msg" :duration="1500"></uni-popup-message>
+  </uni-popup>
+  <div id="qrcode">
+    <canvas id="qrcode" canvas-id="qrcode" style="width: 300px; margin: 0 auto; height: 300px" />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, getCurrentInstance } from 'vue'
+import { onReady } from '@dcloudio/uni-app'
+import { ref, reactive, watch, getCurrentInstance, onMounted } from 'vue'
 import searchBox from '/src/components/search-box/index.vue'
 import insertPw from '/src/components/insert-pw/index.vue'
 import pwList from '/src/components/pw-list/index.vue'
@@ -84,11 +91,54 @@ const subInsertPW = function (e: object) {
   }
   pwListData.push(obj)
 }
+onReady(() => {})
+
+// 二维码生成
+const genQrcode = function (text: string) {
+  proxy.$uqrcode.make({
+    canvasId: 'qrcode',
+    componentInstance: this,
+    text: text,
+    size: 100,
+    margin: 0,
+    backgroundColor: '#ffffff',
+    foregroundColor: '#000000',
+    fileType: 'jpg',
+    errorCorrectLevel: proxy.$uqrcode.errorCorrectLevel.H,
+    success: (res) => {
+      infoShow("二维码生成成功")
+    }
+  })
+}
+
+// 二维码扫描
+const qrCodeScan = function (e: any) {
+  console.log(12312)
+  uni.scanCode({
+    success: function (res) {
+      infoShow('扫描成功')
+      const tempList: Array<object> = JSON.parse(res.result)
+      for (let i = 0; i < tempList.length; i++) {
+        pwListData.push(tempList[i])
+      }
+    },
+    fail() {
+      infoShow('扫描失败')
+    }
+  })
+}
 const deletePW = function (e: number) {
   console.log(e)
 }
 const editCurPW = function (e: number) {
   console.log(e)
+}
+// 弹出层
+const popup = ref<any>(null)
+const msg = ref<string>('')
+const infoShow = function (value: string) {
+  msg.value = value
+  popup.value && popup.value.open()
 }
 // 获取创建时间
 const getCreateDate = function () {
