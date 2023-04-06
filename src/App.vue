@@ -11,6 +11,7 @@ onHide(() => {
 })
 </script>
 <style>
+@import "./static/font/iconfont.css";
 @font-face {
   font-family: 'ceyy';
   src: url('./static/font/ceyy.ttf');

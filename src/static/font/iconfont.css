@@ -1,0 +1,25 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 3998940 */
+  src:  url('./iconfont.ttf') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-daochu:before {
+  content: "\e65b";
+}
+
+.icon-daoru:before {
+  content: "\e65d";
+}
+
+.icon-erweima:before {
+  content: "\e636";
+}
+

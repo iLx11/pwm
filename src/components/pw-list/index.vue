@@ -133,7 +133,7 @@ const pwActive = function (k: number) {
 const curCode = reactive<CurCode>({
   userName: 'user',
   password: 'password',
-  level: ''
+  level: 0
 })
 // 显示更改密码等级的组件
 const showLevelBox = function () {

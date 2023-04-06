@@ -10,7 +10,7 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "PWM"
 			}
 		}, {
 			"path": "pages/pwsystem/index",
@@ -20,9 +20,9 @@
 		}
 	],
 	"globalStyle": {
-		"navigationStyle": "custom",
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
+		// "navigationStyle": "custom",
+		"navigationBarTextStyle": "#d6d6d6",
+		"navigationBarTitleText": "PWM",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
 	}
