@@ -3,7 +3,7 @@
     <uni-icons type="plusempty" color="rgba(255,255,255,0.7)" size="35" @click="showInsert"></uni-icons>
   </div>
   <!-- <div> -->
-  <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan" @qrCodeGen="qrCodeGen"></search-box>
+  <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan" @qrCodeGen="qrCodeGen" @importText="importText" @exportText="exportText"></search-box>
   <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW"></insert-pw>
   <pw-list :pwList="pwListData" @delPW="deletePW" @editPW="editCurPW" @infoWarn="infoShow"></pw-list>
   <!-- </div> -->
@@ -17,11 +17,14 @@
   </div>
   <!-- 显示导入 -->
   <div id="importBox" v-if="importShow">
-    
+    <textarea name="" id="" maxlength="-1" v-model.trim="importValue"></textarea>
+
+    <div id="notice1" @click="exeImportText(importValue)">文本导入</div>
   </div>
   <!-- 显示导出 -->
   <div id="exportBox" v-if="exportShow">
-    
+    <div id="export-text" v-copy="exportPWText">{{ exportPWText }}</div>
+    <div id="notice2" v-copy="exportPWText">文本导出，点击可复制</div>
   </div>
 
   <div id="cover" v-if="coverShow" @click="showOff"></div>
@@ -43,11 +46,59 @@ const showInsert = function () {
 
 const pwLength = ref<number>(0)
 const qrcodeShow = ref<boolean>(false)
-const coverShow = ref<boolean> (false)
-const showOff = function() {
+const importShow = ref<boolean>(false)
+const exportShow = ref<boolean>(false)
+const coverShow = ref<boolean>(false)
+const exportPWText = ref<string>('')
+const importValue = ref<string>('')
+const showOff = function () {
   coverShow.value = false
   qrcodeShow.value = false
+  importShow.value = false
+  exportShow.value = false
+}
+// 用文本导入
+const importText = function () {
+  coverShow.value = true
+  importShow.value = true
+  uni.getClipboardData({
+    success: function (res) {
+      infoShow('读取剪贴板成功')
+      importValue.value = res.data
+    }
+  })
+}
+// 执行导入
+const exeImportText = function (valueStr: string) {
+  if (valueStr !== '' && valueStr !== null) {
+    try {
+      let num: Array<Array<string>> = decodeText(valueStr)
+      num.forEach((o, i) => {
+        let ids = pwListData.length == 0 ? 1 : pwListData[pwListData.length - 1].id + 1
+        const obj: object = {
+          id: ids,
+          describe: o[0],
+          userName: o[1],
+          password: o[2],
+          level: 3,
+          active: false,
+          createDate: getCreateDate()
+        }
+        pwListData.push(obj)
+      })
+      infoShow('导入成功')
+    } catch (e) {
+      console.log(e)
+      infoShow('发生未知错误')
+    }
+  }
+}
 
+// 导出文本
+const exportText = function () {
+  coverShow.value = true
+  exportShow.value = true
+  exportPWText.value = generateText()
 }
 const pwListData = reactive<object[]>([
   {
@@ -98,73 +149,108 @@ const pwListData = reactive<object[]>([
 ])
 // 提交添加密码
 const subInsertPW = function (e: object) {
-  console.log(e.describe)
-  let ids = pwListData.length == 0 ? 1 : pwListData[pwListData.length - 1].id + 1
-  const obj: object = {
-    id: ids,
-    describe: e.describe,
-    userName: e.userName,
-    password: proxy.$AES_Encrypt(e.password),
-    level: 3,
-    active: false,
-    createDate: getCreateDate()
+  try {
+    let ids = pwListData.length == 0 ? 1 : pwListData[pwListData.length - 1].id + 1
+    const obj: object = {
+      id: ids,
+      describe: e.describe,
+      userName: e.userName,
+      password: proxy.$AES_Encrypt(e.password),
+      level: 3,
+      active: false,
+      createDate: getCreateDate()
+    }
+    pwListData.push(obj)
+  } catch (e) {
+    console.log(e)
+    infoShow('发生未知错误')
   }
-  pwListData.push(obj)
 }
-onReady(() => {})
 
 // 二维码生成
 const genQrcode = function (text: string) {
-  proxy.$uqrcode.make({
-    canvasId: 'qrcode',
-    componentInstance: this,
-    text: text,
-    size: 300,
-    margin: 0,
-    backgroundColor: '#ffffff',
-    foregroundColor: '#000000',
-    fileType: 'jpg',
-    errorCorrectLevel: proxy.$uqrcode.errorCorrectLevel.H,
-    success: (res) => {
-      infoShow('二维码生成成功')
-    }
-  })
+  try {
+    proxy.$uqrcode.make({
+      canvasId: 'qrcode',
+      componentInstance: this,
+      text: text,
+      size: 300,
+      margin: 0,
+      backgroundColor: '#ffffff',
+      foregroundColor: '#000000',
+      fileType: 'jpg',
+      errorCorrectLevel: proxy.$uqrcode.errorCorrectLevel.H,
+      success: (res) => {
+        infoShow('二维码生成成功')
+      },
+      fail() {
+        infoShow('二维码生成失败')
+      }
+    })
+  } catch (error) {
+    console.log(e)
+    infoShow('发生未知错误，生成失败，请使用文本导入')
+  }
 }
 // 二维码生成
 const qrCodeGen = function () {
   coverShow.value = true
   qrcodeShow.value = true
-  let tempListStr: string = ''
-  pwListData.forEach((o, i) => {
-    let tempStr: string = `${o.describe}@${o.userName}@${o.password}|`
-    tempListStr += tempStr
+  let tempStr: string = generateText()
+  console.log(tempStr)
+  genQrcode(tempStr)
+}
+
+// 生成文本函数
+const generateText = function (): string {
+  try {
+    let tempListStr: string = ''
+    pwListData.forEach((o, i) => {
+      let tempStr: string = `${o.describe}@${o.userName}@${o.password}|`
+      if (pwListData.length - 1 === i) {
+        tempStr = `${o.describe}@${o.userName}@${o.password}`
+      }
+      tempListStr += tempStr
+    })
+    console.log(decodeText(tempListStr))
+    return tempListStr
+  } catch (e) {
+    console.log(e)
+    infoShow('发生未知错误')
+  }
+}
+// 解析字符函数
+const decodeText = function (str: string): Array<Array<string>> {
+  let num: Array<Array<string>> = []
+  str.split('|').forEach((o) => {
+    let temp: Array<string> = o.split('@')
+    if (temp) num.push(temp)
   })
-  console.log(tempListStr)
-  genQrcode(tempListStr)
+  return num
 }
 
 // 二维码扫描
 const qrCodeScan = function (e: any) {
-  uni.scanCode({
-    success: function (res) {
-      uni.vibrate({
-        success() {}
-      })
-      infoShow('扫描成功')
-
-      // const tempList: Array<object> = JSON.parse(res.result)
-      // for (let i = 0; i < tempList.length; i++) {
-      //   pwListData.push(tempList[i])
-      // }
-    },
-    fail() {
-      infoShow('扫描失败')
-    }
-  })
+  try {
+    uni.scanCode({
+      success: function (res) {
+        infoShow('扫描成功')
+        exeImportText(res.result)
+      },
+      fail() {
+        infoShow('扫描失败')
+      }
+    })
+  } catch (error) {
+    console.log(error)
+    infoShow('发生未知错误')
+  }
 }
+// 删除密码
 const deletePW = function (e: number) {
   console.log(e)
 }
+// 编辑密码
 const editCurPW = function (e: number) {
   console.log(e)
 }
@@ -194,6 +280,38 @@ watch(
     immediate: true
   }
 )
+// 自定义复制指令
+const vCopy = {
+  mounted: (el: any, { value }: any) => {
+    el.$value = value
+    el.handler = () => {
+      if (!el.$value) {
+        infoShow('内容为空')
+        return
+      }
+      uni.setClipboardData({
+        data: el.$value,
+        success() {
+          infoShow('复制成功')
+        },
+        fail() {
+          infoShow('复制失败')
+        },
+        showToast: false
+      })
+    }
+    //绑定事件
+    el.addEventListener('click', el.handler)
+  },
+  //当传进来的值更新的时候触发
+  updated(el, { value }) {
+    el.$value = value
+  },
+  //指令与元素解绑的时候
+  unMounted(el) {
+    el.removeEventListener('click', el.handler)
+  }
+}
 </script>
 
 <style lang="scss">
@@ -205,7 +323,7 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   top: 0;
   left: 0;
   background: rgba(51, 51, 51, 0.13);
-  z-index: 66;
+  z-index: 666;
 }
 #add-button {
   width: 55px;
@@ -235,7 +353,92 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   display: flex;
   justify-content: center;
   align-items: center;
+  font-family: 'ceyy';
+  overflow: hidden;
+
   #notice {
+    width: 90%;
+    height: 30px;
+    position: absolute;
+    bottom: 0%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(51, 51, 51, 0.7);
+    box-shadow: $shadow1;
+    border-radius: 16px;
+    z-index: 6666;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+#importBox {
+  width: 92%;
+  height: 400px;
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: $shadow1;
+  border-radius: 16px;
+  z-index: 6666;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'ceyy';
+  overflow: hidden;
+
+  #notice1 {
+    width: 90%;
+    height: 30px;
+    position: absolute;
+    bottom: 0%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(51, 51, 51, 0.7);
+    box-shadow: $shadow1;
+    border-radius: 16px;
+    z-index: 6666;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  textarea {
+    width: 90%;
+    height: 75%;
+    border-radius: 16px;
+    box-shadow: 0 0 0 0.9px rgba(51, 51, 51, 0.4);
+    padding: 2em;
+    margin-bottom: 3em;
+  }
+}
+#exportBox {
+  width: 92%;
+  height: 300px;
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: $shadow1;
+  border-radius: 16px;
+  z-index: 6666;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'ceyy';
+
+  #export-text {
+    width: 90%;
+    height: 70%;
+    word-break: break-all;
+    overflow: hidden;
+    margin-bottom: 1em;
+  }
+  #notice2 {
     width: 90%;
     height: 30px;
     position: absolute;

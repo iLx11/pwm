@@ -49,7 +49,7 @@ const props = defineProps({
     type: Number
   }
 })
-const emits = defineEmits(['qrCodeScan', 'qrCodeGen'])
+const emits = defineEmits(['qrCodeScan', 'qrCodeGen', 'importText', 'exportText'])
 </script>
 
 <style lang="scss">
@@ -72,7 +72,7 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   position: absolute;
   top: 5%;
   right: 5%;
-  z-index: 666;
+  z-index: 600;
   background: rgba(51, 51, 51, 0.1);
   border-radius: 20px;
   display: flex;

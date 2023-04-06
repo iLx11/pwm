@@ -15,7 +15,7 @@
 		}, {
 			"path": "pages/pwsystem/index",
 			"style": {
-				"navigationBarTitleText": "pw-system"
+				"navigationBarTitleText": "Management"
 			}
 		}
 	],
