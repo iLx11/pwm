@@ -4,7 +4,7 @@
   </div>
   <!-- <div> -->
   <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan" @qrCodeGen="qrCodeGen" @importText="importText" @exportText="exportText"></search-box>
-  <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW"></insert-pw>
+  <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW" ref="insertBox"></insert-pw>
   <pw-list :pwList="pwListData" @delPW="deletePW" @editPW="editCurPW" @infoWarn="infoShow"></pw-list>
   <!-- </div> -->
   <uni-popup ref="popup" type="message">
@@ -26,7 +26,9 @@
     <div id="export-text" v-copy="exportPWText">{{ exportPWText }}</div>
     <div id="notice2" v-copy="exportPWText">文本导出，点击可复制</div>
   </div>
-
+  <uni-popup ref="popupConfirm" type="dialog">
+    <uni-popup-dialog mode="base" type="info" :content="msgConfirm" :duration="2000" :before-close="true" @close="close" @confirm="confirm"></uni-popup-dialog>
+  </uni-popup>
   <div id="cover" v-if="coverShow" @click="showOff"></div>
 </template>
 
@@ -39,10 +41,6 @@ import pwList from '/src/components/pw-list/index.vue'
 
 const insertShow = ref<boolean>(false)
 const { proxy } = getCurrentInstance()
-// 显示密码添加组件
-const showInsert = function () {
-  insertShow.value = true
-}
 
 const pwLength = ref<number>(0)
 const qrcodeShow = ref<boolean>(false)
@@ -51,6 +49,9 @@ const exportShow = ref<boolean>(false)
 const coverShow = ref<boolean>(false)
 const exportPWText = ref<string>('')
 const importValue = ref<string>('')
+const curInsertType = ref<boolean>(false)
+const insertBox = ref(null)
+const curPW = ref<number>(0)
 const showOff = function () {
   coverShow.value = false
   qrcodeShow.value = false
@@ -68,6 +69,12 @@ const importText = function () {
     }
   })
 }
+// 显示密码添加组件
+const showInsert = function () {
+  curInsertType.value = false
+  insertShow.value = true
+}
+
 // 执行导入
 const exeImportText = function (valueStr: string) {
   if (valueStr !== '' && valueStr !== null) {
@@ -100,6 +107,7 @@ const exportText = function () {
   exportShow.value = true
   exportPWText.value = generateText()
 }
+// 密码列表
 const pwListData = reactive<object[]>([
   {
     id: 1,
@@ -150,17 +158,26 @@ const pwListData = reactive<object[]>([
 // 提交添加密码
 const subInsertPW = function (e: object) {
   try {
-    let ids = pwListData.length == 0 ? 1 : pwListData[pwListData.length - 1].id + 1
-    const obj: object = {
-      id: ids,
-      describe: e.describe,
-      userName: e.userName,
-      password: proxy.$AES_Encrypt(e.password),
-      level: 3,
-      active: false,
-      createDate: getCreateDate()
+    if (!curInsertType.value) {
+      let ids = pwListData.length == 0 ? 1 : pwListData[pwListData.length - 1].id + 1
+      const obj: object = {
+        id: ids,
+        describe: e.describe,
+        userName: e.userName,
+        password: proxy.$AES_Encrypt(e.password),
+        level: 3,
+        active: false,
+        createDate: getCreateDate()
+      }
+      pwListData.push(obj)
+      infoShow("添加成功")
+    } else {
+      pwListData[curPW.value].describe = e.describe
+      pwListData[curPW.value].userName = e.userName
+      pwListData[curPW.value].password = proxy.$AES_Encrypt(e.password)
+      infoShow("修改成功")
     }
-    pwListData.push(obj)
+    insertShow.value = false
   } catch (e) {
     console.log(e)
     infoShow('发生未知错误')
@@ -188,7 +205,7 @@ const genQrcode = function (text: string) {
       }
     })
   } catch (error) {
-    console.log(e)
+    console.log(error)
     infoShow('发生未知错误，生成失败，请使用文本导入')
   }
 }
@@ -197,7 +214,6 @@ const qrCodeGen = function () {
   coverShow.value = true
   qrcodeShow.value = true
   let tempStr: string = generateText()
-  console.log(tempStr)
   genQrcode(tempStr)
 }
 
@@ -212,11 +228,12 @@ const generateText = function (): string {
       }
       tempListStr += tempStr
     })
-    console.log(decodeText(tempListStr))
+    // console.log(decodeText(tempListStr))
     return tempListStr
   } catch (e) {
     console.log(e)
     infoShow('发生未知错误')
+    return ''
   }
 }
 // 解析字符函数
@@ -246,20 +263,70 @@ const qrCodeScan = function (e: any) {
     infoShow('发生未知错误')
   }
 }
+// 确认框操作
+let close = function () {
+  infoShow('取消')
+  popupConfirm.value && popupConfirm.value.close()
+}
+let confirm = function () {
+  infoShow('确认')
+  popupConfirm.value && popupConfirm.value.close()
+}
 // 删除密码
 const deletePW = function (e: number) {
-  console.log(e)
+  try {
+    confirmShow('确定要<删除>此密码吗')
+    close = () => {
+      infoShow('取消删除')
+      popupConfirm.value && popupConfirm.value.close()
+    }
+    confirm = () => {
+      pwListData.splice(e, 1)
+      popupConfirm.value && popupConfirm.value.close()
+      infoShow('删除成功')
+    }
+  } catch (e) {
+    console.log(e)
+    infoShow('发生未知错误')
+  }
 }
+
 // 编辑密码
 const editCurPW = function (e: number) {
-  console.log(e)
+  try {
+    confirmShow('确定要<修改>此密码吗')
+    close = () => {
+      infoShow('取消修改')
+      popupConfirm.value && popupConfirm.value.close()
+    }
+    confirm = () => {
+      infoShow('确认修改')
+      curInsertType.value = true
+      insertShow.value = true
+      setTimeout(() => {
+        insertBox.value.addFormData.describe = pwListData[e].describe
+        insertBox.value.addFormData.userName = pwListData[e].userName
+        insertBox.value.addFormData.password = proxy.$AES_Decrypt(pwListData[e].password)
+      }, 20)
+      curPW.value = e
+      popupConfirm.value && popupConfirm.value.close()
+    }
+  } catch (error) {
+    console.log(error)
+  }
 }
 // 弹出层
 const popup = ref<any>(null)
+const popupConfirm = ref<any>(null)
 const msg = ref<string>('')
+const msgConfirm = ref<string>('')
 const infoShow = function (value: string) {
   msg.value = value
   popup.value && popup.value.open()
+}
+const confirmShow = function (value: string) {
+  msgConfirm.value = value
+  popupConfirm.value && popupConfirm.value.open()
 }
 // 获取创建时间
 const getCreateDate = function () {

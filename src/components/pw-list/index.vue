@@ -1,49 +1,49 @@
 <template>
   <!-- <div> -->
-    <div id="show-real-pw">
-      <div id="levelChange" v-if="levelShow">
-        <div @click="changeLevel(1)">1</div>
-        <div @click="changeLevel(2)">2</div>
-        <div @click="changeLevel(3)">3</div>
+  <div id="show-real-pw">
+    <div id="levelChange" v-if="levelShow">
+      <div @click="changeLevel(1)">1</div>
+      <div @click="changeLevel(2)">2</div>
+      <div @click="changeLevel(3)">3</div>
+    </div>
+    <div id="show-pw-box">
+      <div id="show-pw-user" v-copy="curCode.userName">
+        {{ curCode.userName }}
       </div>
-      <div id="show-pw-box">
-        <div id="show-pw-user" v-copy="curCode.userName">
-          {{ curCode.userName }}
-        </div>
-        <div id="show-pw-password" v-copy="curCode.password">
-          {{ curCode.password }}
-        </div>
-      </div>
-      <div id="show-button" @click="showLevelBox">
-        <div>{{ curCode.level }}</div>
+      <div id="show-pw-password" v-copy="curCode.password">
+        {{ curCode.password }}
       </div>
     </div>
-    <!-- 密码列表 -->
-    <ul class="showList" :style="{height: listHeight}">
-      <li :class="{ showpwList: true, pwBorder: v.active }" v-for="(v, k) in pwList" :key="v.id" @click="pwActive(k)">
-        <div class="show-desc">
-          {{ v.describe }}
+    <div id="show-button" @click="showLevelBox">
+      <div>{{ curCode.level }}</div>
+    </div>
+  </div>
+  <!-- 密码列表 -->
+  <ul class="showList" :style="{ height: listHeight }">
+    <li :class="{ showpwList: true, pwBorder: v.active }" v-for="(v, k) in pwList" :key="v.id" @click="pwActive(k)">
+      <div class="show-desc">
+        {{ v.describe }}
+      </div>
+      <div class="showData">
+        <div class="show-data">
+          <div class="show-level">level: {{ v.level }}</div>
+          <div class="show-date">{{ v.createDate }}</div>
         </div>
-        <div class="showData">
-          <div class="show-data">
-            <div class="show-level">level: {{ v.level }}</div>
-            <div class="show-date">{{ v.createDate }}</div>
-          </div>
-        </div>
-        <div id="del-pw">
-          <uni-icons @click="emits('delPW', k)" type="clear" color="rgba(51,51,51,0.2)" size="25"></uni-icons>
-        </div>
-        <div id="edit-pw">
-          <uni-icons @click="emits('editPW', k)" type="settings-filled" color="rgba(51,51,51,0.2)" size="25"></uni-icons>
-        </div>
-      </li>
-    </ul>
-   
+      </div>
+      <div id="del-pw">
+        <uni-icons @click="emits('delPW', k)" type="clear" color="rgba(51,51,51,0.2)" size="25"></uni-icons>
+      </div>
+      <div id="edit-pw">
+        <uni-icons @click="emits('editPW', k)" type="settings-filled" color="rgba(51,51,51,0.2)" size="25"></uni-icons>
+      </div>
+    </li>
+  </ul>
+
   <!-- </div> -->
 </template>
 
 <script setup="props, { emit }" lang="ts">
-import { ref, reactive, onMounted, getCurrentInstance, watch} from 'vue'
+import { ref, reactive, onMounted, getCurrentInstance, watch } from 'vue'
 
 interface CurCode {
   userName: string
@@ -75,7 +75,6 @@ const changeLevel = function (level: number) {
         if (parseInt(pwList[i].level) === level) break
         let compareNum: number = parseInt(pwList[i].level) > level ? 1 : 0
         pwList[i].level = level
-        // pwList[i].level = "2"
         sortList(compareNum, i)
       }
     }
@@ -114,19 +113,26 @@ const sortList = function (isUp: number, cur: number) {
 const curListKey = ref<number>(0)
 // 密码点击对应显示
 const pwActive = function (k: number) {
-  if (pwList[k].active === false) {
-    for (let i = 0; i < pwList.length; i++) {
-      pwList[i].active = false
+  try {
+    if (pwList[k]?.active === false) {
+      for (let i = 0; i < pwList.length; i++) {
+        pwList[i].active = false
+      }
+      pwList[k].active = true
+      curListKey.value = k
+      curCode.userName = pwList[k].userName
+      curCode.password = proxy.$AES_Decrypt(pwList[k].password)
+      curCode.level = pwList[k].level
+    } else {
+      if (pwList[k]) pwList[k].active = false
+      curCode.userName = 'user'
+      curCode.password = 'password'
+      curCode.level = 0
+      levelShow.value = false
     }
-    pwList[k].active = true
-    curListKey.value = k
-    curCode.userName = pwList[k].userName
-    curCode.password = proxy.$AES_Decrypt(pwList[k].password)
-    curCode.level = pwList[k].level
-  } else {
-    pwList[k].active = false
-    curCode.userName = curCode.password = curCode.level = ''
-    levelShow.value = false
+  } catch (error) {
+    console.log(error)
+    emits('infoWarn', '发生未知错误')
   }
 }
 // 当前显示的对象
@@ -137,16 +143,17 @@ const curCode = reactive<CurCode>({
 })
 // 显示更改密码等级的组件
 const showLevelBox = function () {
-  if (curCode.level !== 0) levelShow.value = true
+  if (curCode.level !== 0 || curCode.level) levelShow.value = true
 }
 // 监听密码等级的修改
 watch(
-  () => pwList[curListKey.value].level,
+  () => {
+    if (pwList[curListKey.value]?.level) pwList[curListKey.value].level
+  },
   (newV, oldV) => {
     curCode.level = pwList[curListKey.value].level
   }
 )
-
 
 // 自定义复制指令
 const vCopy = {
@@ -154,16 +161,16 @@ const vCopy = {
     el.$value = value
     el.handler = () => {
       if (!el.$value) {
-        emits('infoWarn','内容为空')
+        emits('infoWarn', '内容为空')
         return
       }
       uni.setClipboardData({
         data: el.$value,
         success() {
-          emits('infoWarn',"复制成功")
+          emits('infoWarn', '复制成功')
         },
         fail() {
-          emits('infoWarn',"复制失败")
+          emits('infoWarn', '复制失败')
         },
         showToast: false
       })

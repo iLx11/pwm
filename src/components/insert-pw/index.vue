@@ -27,6 +27,9 @@ const addFormData = reactive({
   userName: '',
   password: ''
 })
+defineExpose({
+  addFormData
+})
 const subInsert = function () {
   emits('subInsert', addFormData)
 }
