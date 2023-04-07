@@ -31,7 +31,7 @@
       <div>
         <uni-icons type="search" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
       </div>
-      <input type="text" />
+      <input type="text" v-model.trim="searchContent" @keyup="emits('searchExe',searchContent)" @focus="emits('isFocus',searchContent)" @blur="emits('isBlur',searchContent)"/>
     </div>
   </div>
 </template>
@@ -44,12 +44,13 @@ onMounted(() => {
 })
 const boxHeight = ref<string>('')
 const toolBoxShow = ref<boolean>(false)
+const searchContent = ref<string>('')
 const props = defineProps({
   pwListLength: {
     type: Number
   }
 })
-const emits = defineEmits(['qrCodeScan', 'qrCodeGen', 'importText', 'exportText'])
+const emits = defineEmits(['qrCodeScan', 'qrCodeGen', 'importText', 'exportText', 'searchExe', 'isFocus', 'isBlur'])
 </script>
 
 <style lang="scss">
@@ -87,7 +88,7 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   margin: 0 auto;
   margin-bottom: 1em;
   border-radius: 25px;
-  background: rgba(218, 218, 224, 0.9);
+  background: rgba(137, 178, 202, 0.2);
   display: flex;
   flex-flow: column nowrap;
   justify-content: space-evenly;
@@ -128,6 +129,8 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
     display: flex;
     justify-content: center;
     align-items: center;
+    font-family: "ceyy";
+    color: rgba(51, 51, 51, 0.7);
     div {
       width: 15%;
       height: 100%;

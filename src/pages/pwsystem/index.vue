@@ -3,7 +3,7 @@
     <uni-icons type="plusempty" color="rgba(255,255,255,0.7)" size="35" @click="showInsert"></uni-icons>
   </div>
   <!-- <div> -->
-  <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan" @qrCodeGen="qrCodeGen" @importText="importText" @exportText="exportText"></search-box>
+  <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan" @qrCodeGen="qrCodeGen" @importText="importText" @exportText="exportText" @searchExe="searchExe" @isFocus="isFocus" @isBlur="isBlur"></search-box>
   <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW" ref="insertBox"></insert-pw>
   <pw-list :pwList="pwListData" @delPW="deletePW" @editPW="editCurPW" @infoWarn="infoShow"></pw-list>
   <!-- </div> -->
@@ -39,9 +39,22 @@ import searchBox from '/src/components/search-box/index.vue'
 import insertPw from '/src/components/insert-pw/index.vue'
 import pwList from '/src/components/pw-list/index.vue'
 
+onReady(() => {
+  try {
+    if (uni.getStorageSync('pwList')) {
+      const listArr: Array<object> = JSON.parse(uni.getStorageSync('pwList'))
+      pwListData.length = 0
+      for (let i = 0; i < listArr.length; i++) {
+        pwListData.push(listArr[i])
+      }
+    }
+  } catch (error) {
+    console.log(error)
+    infoShow('发生未知错误')
+  }
+})
 const insertShow = ref<boolean>(false)
 const { proxy } = getCurrentInstance()
-
 const pwLength = ref<number>(0)
 const qrcodeShow = ref<boolean>(false)
 const importShow = ref<boolean>(false)
@@ -75,6 +88,48 @@ const showInsert = function () {
   insertShow.value = true
 }
 
+// 判断搜索组件输入框是否为 focus
+const isFocus = function (e: string) {
+  if (e === '' || e === null) {
+    tempListData.length = 0
+    for (let i = 0; i < pwListData.length; i++) {
+      tempListData.push(pwListData[i])
+    }
+    pwListData.length = 0
+  }
+}
+// 判断搜索组件输入框是否为 blur
+const isBlur = function (e: string) {
+  if (e === '' || e === null) {
+    pwListData.length = 0
+    for (let i = 0; i < tempListData.length; i++) {
+      pwListData.push(tempListData[i])
+    }
+    tempListData.length = 0
+  }
+}
+
+let timer: number
+// 执行搜索
+const searchExe = function (e: string) {
+  // console.log(e)
+  // 防抖
+  clearTimeout(timer)
+  timer = setTimeout(() => {
+    pwListData.length = 0
+    if (e != '' && e != null) {
+      tempListData.forEach((o, i) => {
+        let reg = new RegExp(e + '\+', 'i')
+        if (reg.test(o.describe)) {
+          pwListData.push(o)
+        }
+      })
+    } else {
+      infoShow('输入内容为空')
+    }
+  }, 300)
+}
+
 // 执行导入
 const exeImportText = function (valueStr: string) {
   if (valueStr !== '' && valueStr !== null) {
@@ -94,6 +149,8 @@ const exeImportText = function (valueStr: string) {
         pwListData.push(obj)
       })
       infoShow('导入成功')
+      // 存储系统密码
+      uni.setStorageSync('pwList', JSON.stringify(pwListData))
     } catch (e) {
       console.log(e)
       infoShow('发生未知错误')
@@ -108,53 +165,8 @@ const exportText = function () {
   exportPWText.value = generateText()
 }
 // 密码列表
-const pwListData = reactive<object[]>([
-  {
-    id: 1,
-    describe: '1',
-    userName: '1',
-    password: '12hgfdgh3',
-    level: 1,
-    active: false,
-    createDate: '2000.12.12'
-  },
-  {
-    id: 2,
-    describe: '2',
-    userName: '2',
-    password: '12hgfdgh3',
-    level: 1,
-    active: false,
-    createDate: '2000.12.12'
-  },
-  {
-    id: 3,
-    describe: '3',
-    userName: '3',
-    password: '12hgfdgh3',
-    level: 1,
-    active: false,
-    createDate: '2000.12.12'
-  },
-  {
-    id: 4,
-    describe: '3',
-    userName: '3',
-    password: '12hgfdgh3',
-    level: 1,
-    active: false,
-    createDate: '2000.12.12'
-  },
-  {
-    id: 5,
-    describe: '3',
-    userName: '3',
-    password: '12hgfdgh3',
-    level: 1,
-    active: false,
-    createDate: '2000.12.12'
-  }
-])
+const pwListData = reactive<object[]>([])
+const tempListData = reactive<object[]>([])
 // 提交添加密码
 const subInsertPW = function (e: object) {
   try {
@@ -170,14 +182,16 @@ const subInsertPW = function (e: object) {
         createDate: getCreateDate()
       }
       pwListData.push(obj)
-      infoShow("添加成功")
+      infoShow('添加成功')
     } else {
       pwListData[curPW.value].describe = e.describe
       pwListData[curPW.value].userName = e.userName
       pwListData[curPW.value].password = proxy.$AES_Encrypt(e.password)
-      infoShow("修改成功")
+      infoShow('修改成功')
     }
     insertShow.value = false
+    // 存储系统密码
+    uni.setStorageSync('pwList', JSON.stringify(pwListData))
   } catch (e) {
     console.log(e)
     infoShow('发生未知错误')
@@ -284,6 +298,8 @@ const deletePW = function (e: number) {
       pwListData.splice(e, 1)
       popupConfirm.value && popupConfirm.value.close()
       infoShow('删除成功')
+      // 存储系统密码
+      uni.setStorageSync('pwList', JSON.stringify(pwListData))
     }
   } catch (e) {
     console.log(e)

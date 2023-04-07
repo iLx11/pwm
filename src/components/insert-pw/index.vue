@@ -9,6 +9,7 @@
             <input type="text" v-model="addFormData.describe" placeholder="密码描述" />
             <input type="text" v-model="addFormData.userName" placeholder="用户名" />
             <input type="text" v-model="addFormData.password" placeholder="密码" />
+            <div id="genCode" @click="generateCode"></div>
           </div>
         </form>
       </div>
@@ -33,11 +34,45 @@ defineExpose({
 const subInsert = function () {
   emits('subInsert', addFormData)
 }
-
+const generateCode = function() {
+  addFormData.password = generatePassword(12, true)
+}
+const chars = [
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", 
+  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", 
+  "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", 
+  "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", 
+  "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", 
+  "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", 
+  "8", "9", "!", "@", "#", "$", "%", "^", "&", "*", 
+  "(", ")", "_", "-", "+", "="
+];
+const generatePassword = function (length: number, useSpecialChars: boolean): string {
+  let password: string = "";
+  // 如果需要使用特殊字符，则将特殊字符添加到数组中
+  if (useSpecialChars) {
+    chars.push("!", "#", "$", "%", "^", "&", "*", "(", ")", "_", "-", "+", "=");
+  }
+  // 从数组中随机选择字符，直到达到指定的长度
+  while (password.length < length) {
+    password += chars[Math.floor(Math.random() * chars.length)];
+  }
+  // 返回生成的密码
+  return password;
+}
 </script>
 <style lang="scss">
 $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
-
+#genCode {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  bottom: 13%;
+  left: 5%;
+  background: white;
+  border-radius: 9px;
+  box-shadow: $shadow1;
+}
 /*添加密码开始*/
 #cover {
   width: 100%;
