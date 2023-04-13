@@ -1,24 +1,24 @@
 <template>
+  <div id="backg"></div>
   <div id="add-button">
     <uni-icons type="plusempty" color="rgba(255,255,255,0.7)" size="35" @click="showInsert"></uni-icons>
   </div>
   <!-- <div> -->
-  <search-box :pwListLength="pwLength" @qrCodeScan="qrCodeScan" @qrCodeGen="qrCodeGen" @importText="importText" @exportText="exportText" @searchExe="searchExe" @isFocus="isFocus" @isBlur="isBlur"></search-box>
+  <search-box :pwListLength="pwLength" @searchExe="searchExe" @isFocus="isFocus" @isBlur="isBlur" @showToolBox="showToolBox"></search-box>
   <insert-pw v-if="insertShow" @closeBox="insertShow = false" @subInsert="subInsertPW" ref="insertBox"></insert-pw>
   <pw-list :pwList="pwListData" @delPW="deletePW" @editPW="editCurPW" @infoWarn="infoShow"></pw-list>
   <!-- </div> -->
   <uni-popup ref="popup" type="message">
     <uni-popup-message type="info" :message="msg" :duration="1500"></uni-popup-message>
   </uni-popup>
-  <!-- 显示扫码 -->
+  <!-- 显示二维码 -->
   <div id="qrcodeBox" v-if="qrcodeShow">
-    <canvas id="qrcode" canvas-id="qrcode" style="width: 300px; height: 300px" />
+    <canvas id="qrcode" canvas-id="qrcode" style="width: 320px; height: 320px" />
     <div id="notice">请截图保存后，进行扫描导入</div>
   </div>
   <!-- 显示导入 -->
   <div id="importBox" v-if="importShow">
     <textarea name="" id="" maxlength="-1" v-model.trim="importValue"></textarea>
-
     <div id="notice1" @click="exeImportText(importValue)">文本导入</div>
   </div>
   <!-- 显示导出 -->
@@ -30,10 +30,28 @@
     <uni-popup-dialog mode="base" type="info" :content="msgConfirm" :duration="2000" :before-close="true" @close="close" @confirm="confirm"></uni-popup-dialog>
   </uni-popup>
   <div id="cover" v-if="coverShow" @click="showOff"></div>
+  <!-- 底部工具栏 -->
+  <view id="toolBox" :animation="toolBoxAnimate">
+    <div id="toolIcon">
+      <div id="qrcodeIcon" @click="qrCodeGen">
+        <uni-icons custom-prefix="iconfont" type="icon-erweima" size="30" color="rgba(51,51,51,0.4)"></uni-icons>
+      </div>
+      <div id="importIcon" @click="importText">
+        <uni-icons custom-prefix="iconfont" type="icon-daoru" size="30" color="rgba(51,51,51,0.5)"></uni-icons>
+      </div>
+      <div id="exportIcon" @click="exportText">
+        <uni-icons custom-prefix="iconfont" type="icon-daochu" size="30" color="rgba(51,51,51,0.5)"></uni-icons>
+      </div>
+      <div id="scanIcon" @click="qrCodeScan">
+        <uni-icons type="scan" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
+      </div>
+    </div>
+  </view>
+  <div id="toolContent"></div>
 </template>
 
 <script setup lang="ts">
-import { onReady } from '@dcloudio/uni-app'
+import { onReady, onShow } from '@dcloudio/uni-app'
 import { ref, reactive, watch, getCurrentInstance, onMounted } from 'vue'
 import searchBox from '/src/components/search-box/index.vue'
 import insertPw from '/src/components/insert-pw/index.vue'
@@ -53,8 +71,32 @@ onReady(() => {
     infoShow('发生未知错误')
   }
 })
+onShow(() => {
+  let animation = uni.createAnimation()
+  proxy.animation = animation
+})
+// 动画
+let toolBoxAnimate = ref({})
+const toolBoxAnimation = (value: string, func?: () => void) => {
+  proxy.animation.height(value).step({
+    duration: 400,
+    timingFunction: 'ease'
+  })
+  toolBoxAnimate.value = proxy.animation.export()
+  setTimeout(() => {
+    func && func()
+  }, 400)
+}
+const showToolBox = (e: boolean) => {
+  if (e) {
+    toolBoxAnimation('8%')
+  } else {
+    toolBoxAnimation('0%')
+  }
+}
+
 const insertShow = ref<boolean>(false)
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 const pwLength = ref<number>(0)
 const qrcodeShow = ref<boolean>(false)
 const importShow = ref<boolean>(false)
@@ -65,21 +107,27 @@ const importValue = ref<string>('')
 const curInsertType = ref<boolean>(false)
 const insertBox = ref(null)
 const curPW = ref<number>(0)
+// 点击遮罩取消显示
 const showOff = function () {
   coverShow.value = false
   qrcodeShow.value = false
   importShow.value = false
   exportShow.value = false
+  toolBoxAnimation('8%')
 }
 // 用文本导入
 const importText = function () {
-  coverShow.value = true
-  importShow.value = true
-  uni.getClipboardData({
-    success: function (res) {
-      infoShow('读取剪贴板成功')
-      importValue.value = res.data
-    }
+  qrcodeShow.value = false
+  exportShow.value = false
+  toolBoxAnimation('65%', () => {
+    coverShow.value = true
+    importShow.value = true
+    uni.getClipboardData({
+      success: function (res) {
+        infoShow('读取剪贴板成功')
+        importValue.value = res.data
+      }
+    })
   })
 }
 // 显示密码添加组件
@@ -160,9 +208,13 @@ const exeImportText = function (valueStr: string) {
 
 // 导出文本
 const exportText = function () {
-  coverShow.value = true
-  exportShow.value = true
-  exportPWText.value = generateText()
+  qrcodeShow.value = false
+  importShow.value = false
+  toolBoxAnimation('52%', () => {
+    coverShow.value = true
+    exportShow.value = true
+    exportPWText.value = generateText()
+  })
 }
 // 密码列表
 const pwListData = reactive<object[]>([])
@@ -205,7 +257,7 @@ const genQrcode = function (text: string) {
       canvasId: 'qrcode',
       componentInstance: this,
       text: text,
-      size: 300,
+      size: 320,
       margin: 0,
       backgroundColor: '#ffffff',
       foregroundColor: '#000000',
@@ -225,10 +277,14 @@ const genQrcode = function (text: string) {
 }
 // 二维码生成
 const qrCodeGen = function () {
-  coverShow.value = true
-  qrcodeShow.value = true
-  let tempStr: string = generateText()
-  genQrcode(tempStr)
+  importShow.value = false
+  exportShow.value = false
+  toolBoxAnimation('72%', () => {
+    coverShow.value = true
+    qrcodeShow.value = true
+    let tempStr: string = generateText()
+    genQrcode(tempStr)
+  })
 }
 
 // 生成文本函数
@@ -236,9 +292,9 @@ const generateText = function (): string {
   try {
     let tempListStr: string = ''
     pwListData.forEach((o, i) => {
-      let tempStr: string = `${o.describe}@${o.userName}@${o.password}|`
+      let tempStr: string = `${o.describe}$@#${o.userName}$@#${o.password}&|`
       if (pwListData.length - 1 === i) {
-        tempStr = `${o.describe}@${o.userName}@${o.password}`
+        tempStr = `${o.describe}$@#${o.userName}$@#${o.password}`
       }
       tempListStr += tempStr
     })
@@ -253,8 +309,8 @@ const generateText = function (): string {
 // 解析字符函数
 const decodeText = function (str: string): Array<Array<string>> {
   let num: Array<Array<string>> = []
-  str.split('|').forEach((o) => {
-    let temp: Array<string> = o.split('@')
+  str.split('&|').forEach((o) => {
+    let temp: Array<string> = o.split('$@#')
     if (temp) num.push(temp)
   })
   return num
@@ -263,6 +319,7 @@ const decodeText = function (str: string): Array<Array<string>> {
 // 二维码扫描
 const qrCodeScan = function (e: any) {
   try {
+    showOff()
     uni.scanCode({
       success: function (res) {
         infoShow('扫描成功')
@@ -399,6 +456,14 @@ const vCopy = {
 
 <style lang="scss">
 $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
+#backg {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(246, 246, 246, 0.1);
+}
 #cover {
   width: 100%;
   height: 100%;
@@ -407,6 +472,26 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   left: 0;
   background: rgba(51, 51, 51, 0.13);
   z-index: 666;
+}
+#toolBox {
+  width: 100%;
+  height: 0%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  border-radius: 35px 35px 0 0;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 3px 4px 12px 3px rgba(111, 109, 133, 0.3);
+  z-index: 999;
+  #toolIcon {
+    width: 100%;
+    height: 60px;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
+    padding: 1em;
+  }
 }
 #add-button {
   width: 55px;
@@ -424,18 +509,18 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
 }
 #qrcodeBox {
   width: 92%;
-  height: 500px;
+  height: 400px;
   position: absolute;
-  top: 50%;
+  bottom: -26%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 1);
-  box-shadow: $shadow1;
+  // background: rgba(255, 255, 255, 1);
+  // box-shadow: $shadow1;
   border-radius: 16px;
   z-index: 6666;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   font-family: 'ceyy';
   overflow: hidden;
 
@@ -460,11 +545,11 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   width: 92%;
   height: 400px;
   position: absolute;
-  top: 46%;
+  bottom: -26%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 1);
-  box-shadow: $shadow1;
+  // background: rgba(255, 255, 255, 1);
+  // box-shadow: $shadow1;
   border-radius: 16px;
   z-index: 6666;
   display: flex;
@@ -494,24 +579,21 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
     height: 75%;
     border-radius: 16px;
     box-shadow: 0 0 0 0.9px rgba(51, 51, 51, 0.4);
-    padding: 2em;
+    padding: 1.4em;
     margin-bottom: 3em;
   }
 }
 #exportBox {
   width: 92%;
-  height: 300px;
+  height: 280px;
   position: absolute;
-  top: 44%;
+  bottom: -18%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 1);
-  box-shadow: $shadow1;
-  border-radius: 16px;
   z-index: 6666;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   font-family: 'ceyy';
 
   #export-text {
@@ -525,7 +607,7 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
     width: 90%;
     height: 30px;
     position: absolute;
-    bottom: 0%;
+    bottom: 3%;
     left: 50%;
     transform: translate(-50%, -50%);
     background: rgba(51, 51, 51, 0.7);

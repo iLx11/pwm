@@ -1,27 +1,9 @@
 <template>
   <div id="zhanwei"></div>
   <div id="content-box" :style="{ height: boxHeight }">
-    <div id="showToolBox" @click="toolBoxShow = true" v-if=" !toolBoxShow">
-        <uni-icons type="more-filled" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
-      </div>
-    <div id="tool-box" v-if="toolBoxShow">
-      <div id="qrcodeIcon" @click="emits('qrCodeGen')">
-        <uni-icons custom-prefix="iconfont" type="icon-erweima" size="30" color="rgba(51,51,51,0.4)"></uni-icons>
-      </div>
-      <div id="importIcon" @click="emits('importText')">
-        <uni-icons custom-prefix="iconfont" type="icon-daoru" size="30" color="rgba(51,51,51,0.5)"></uni-icons>
-      </div>
-      <div id="exportIcon" @click="emits('exportText')">
-        <uni-icons custom-prefix="iconfont" type="icon-daochu" size="30" color="rgba(51,51,51,0.5)"></uni-icons>
-      </div>
-      <div id="scanIcon" @click="emits('qrCodeScan')">
-        <uni-icons type="scan" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
-      </div>
-      <div id="scanIcon"  @click="toolBoxShow = false">
-        <uni-icons type="forward" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
-      </div>
+    <div id="showToolBox" @click="toolBoxShow">
+      <uni-icons type="more-filled" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
     </div>
-
     <div id="data-box">
       <div>存储的密码数量</div>
       <span>{{ pwListLength }}</span>
@@ -31,7 +13,7 @@
       <div>
         <uni-icons type="search" color="rgba(51,51,51,0.4)" size="30"></uni-icons>
       </div>
-      <input type="text" v-model.trim="searchContent" @keyup="emits('searchExe',searchContent)" @focus="emits('isFocus',searchContent)" @blur="emits('isBlur',searchContent)"/>
+      <input type="text" v-model.trim="searchContent" @keyup="emits('searchExe', searchContent)" @focus="emits('isFocus', searchContent)" @blur="emits('isBlur', searchContent)" />
     </div>
   </div>
 </template>
@@ -42,19 +24,23 @@ onMounted(() => {
   const cheight: number = uni.getSystemInfoSync().windowHeight
   boxHeight.value = cheight * 0.25 + 'px'
 })
+const isToolBoxShow = ref<boolean>(false)
 const boxHeight = ref<string>('')
-const toolBoxShow = ref<boolean>(false)
 const searchContent = ref<string>('')
 const props = defineProps({
   pwListLength: {
     type: Number
   }
 })
-const emits = defineEmits(['qrCodeScan', 'qrCodeGen', 'importText', 'exportText', 'searchExe', 'isFocus', 'isBlur'])
+const emits = defineEmits(['searchExe', 'isFocus', 'isBlur', 'showToolBox'])
+const toolBoxShow = function() {
+  isToolBoxShow.value = isToolBoxShow.value == false ? true : false
+  emits('showToolBox', isToolBoxShow.value)
+}
 </script>
 
 <style lang="scss">
-$shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
+$shadow1: 3px 4px 10px 2px rgba(111, 109, 133, 0.09);
 #zhanwei {
   width: 100%;
   height: 0.8em;
@@ -67,24 +53,11 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   right: 5%;
   z-index: 666;
 }
-#tool-box {
-  width: 80%;
-  height: 30px;
-  position: absolute;
-  top: 5%;
-  right: 5%;
-  z-index: 600;
-  background: rgba(51, 51, 51, 0.1);
-  border-radius: 20px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-}
 #content-box {
   width: 92%;
   height: 20%;
   // box-shadow: 0 0 0 1px rgba(51, 51, 51, 0.3);
-  box-shadow: $shadow1, 0 0 0 0.3px rgba(51, 51, 51, 0.5);
+  box-shadow: $shadow1;
   margin: 0 auto;
   margin-bottom: 1em;
   border-radius: 25px;
@@ -129,7 +102,7 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: "ceyy";
+    font-family: 'ceyy';
     color: rgba(51, 51, 51, 0.7);
     div {
       width: 15%;

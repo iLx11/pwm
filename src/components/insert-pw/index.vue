@@ -92,7 +92,7 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  border-radius: 20px;
+  border-radius: 30px;
   display: flex;
   flex-flow: column nowrap;
   justify-content: space-between;

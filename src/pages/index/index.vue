@@ -1,25 +1,26 @@
 <template>
   <header>_iLx1_</header>
-  <div class="content" :style="{height: contentH}">
+  <div class="content" :style="{ height: contentH }">
     <div class="headImg"></div>
     <div class="glass"></div>
-    <div class="pw-content">
-      <div class="pw-box">
+    <view class="pw-content">
+      <view class="pw-box" :animation="boxAnimate">
         <div class="pw-box-content">
           <h1>请输入密码</h1>
-          <input :type="showPW.inpType" v-model.trim="inpValue" placeholder="输入后请按回车" @confirm="subPassword" />
+          <input :type="showPW.inpType" v-model.trim="inpValue" placeholder="输入后请按回车" @confirm="subPassword" :focus="isFocus" @blur="isFocus = false" @focus="isFocus = true"/>
           <div class="showpw">
             <uni-icons :type="showPW.iconType" color="rgba(51,51,51,0.4)" size="30" @click="changePWStatus"></uni-icons>
             <span @click="resetPW">重置密码</span>
           </div>
         </div>
-      </div>
-    </div>
+      </view>
+    </view>
     <div class="software-des">PASSWORD</div>
     <div class="software-des1">MANAGEMENT</div>
-    <div class="software-des2">
-      <h1>LOGIN</h1>
-    </div>
+    <view class="software-des2" :animation="cycle1Animation"></view>
+    <view class="software-des3" :animation="cycle2Animation" @click="showInput"><span>login</span></view>
+    <view class="software-des4" :animation="cycle3Animation" @click="hideInput"></view>
+
   </div>
   <div>
     <!-- <center-page v-if="systemShow"></center-page> -->
@@ -31,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { onReady } from '@dcloudio/uni-app'
+import { onHide, onLoad, onReady, onShow } from '@dcloudio/uni-app'
 import { reactive, ref, getCurrentInstance, onMounted } from 'vue'
 // import centerPage from '/src/components/center-page/index.vue'
 import resetPw from '/src/components/reset-pw/index.vue'
@@ -39,17 +40,70 @@ interface ShowType {
   inpType: string
   iconType: string
 }
+const isFocus = ref<boolean>(false)
+// 动画
+onShow(() => {
+  let animation = uni.createAnimation()
+  proxy.animation = animation
+  cycle1ShowAnimation()
+  cycle2ShowAnimation("18%", "10%")
+  cycle3ShowAnimation("52%", "66%")
+})
+// 盒子动画
+let boxAnimate = ref({})
+let cycle1Animation = ref({})
+let cycle2Animation = ref({})
+let cycle3Animation = ref({})
+const boxShowAnimation = function () {
+  proxy.animation.translate(0).opacity(1).step({
+    duration: 1000,
+    timingFunction: 'ease'
+  })
+  boxAnimate.value = proxy.animation.export()
+}
+// 圆圈动画
+const cycle1ShowAnimation = function() {
+  proxy.animation.top("15%").left("-5%").scale(1).step({
+    duration: 1000,
+    timingFunction: 'ease'
+  })
+  cycle1Animation.value = proxy.animation.export()
+}
+const cycle2ShowAnimation = (top: string, left: string) => {
+  proxy.animation.top(top).left(left).scale(1).step({
+    duration: 1000,
+    timingFunction: 'ease'
+  })
+  cycle2Animation.value = proxy.animation.export()
+}
+
+const cycle3ShowAnimation = (top: string, left: string) => {
+  proxy.animation.top(top).left(left).opacity(1).step({
+    duration: 1000,
+    timingFunction: 'ease'
+  })
+  cycle3Animation.value = proxy.animation.export()
+}
+const showInput = () => {
+  boxShowAnimation()
+  cycle2ShowAnimation("18%", "78%")
+  cycle3ShowAnimation("75%", "64%")
+  isFocus.value = true;
+}
+const hideInput = () => {
+  cycle1ShowAnimation()
+  cycle2ShowAnimation("18%", "10%")
+  cycle3ShowAnimation("52%", "66%")
+}
 const contentH = ref<string>('')
 onMounted(() => {
   const cheight: number = uni.getSystemInfoSync().windowHeight
   // content.value && (content.value.style.height = cheight * 0.9 + 'px')
-  contentH.value =  cheight * 0.9 + 'px'
-	if(!uni.getStorageSync("sysPW"))
-	infoShow("首次登陆的话，直接输入就可以记录密码")
+  contentH.value = cheight * 0.9 + 'px'
+  if (!uni.getStorageSync('sysPW')) infoShow('首次登陆的话，直接输入就可以记录密码')
   // uni.clearStorage()
-  // AES_Decrypt(AES_Encrypt("1123qweqwe"))
 })
-const { proxy } = getCurrentInstance()
+const { proxy } = getCurrentInstance() as any
 
 const popup = ref<any>(null)
 const msg = ref<string>('')
@@ -96,7 +150,7 @@ const subPassword = function () {
       resetShow.value = true
     } else {
       infoShow('验证失败')
-      console.log(sysPW)
+      // console.log(sysPW)
     }
   } else {
     infoShow('输入内容不能为空')
@@ -129,14 +183,16 @@ header {
 
   .software-des,
   .software-des1,
-  .software-des2 {
+  .software-des2,
+  .software-des3,
+  .software-des4 {
     position: absolute;
     top: 85%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 40px;
     font-family: 'ast';
-    color: rgba(51, 51, 51, 0.5);
+    color: rgba(51, 51, 51, 0.2);
   }
 
   .software-des1 {
@@ -144,18 +200,56 @@ header {
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 30px;
-    color: rgba(51, 51, 51, 0.4);
+    color: rgba(51, 51, 51, 0.2);
   }
 
-  .software-des2 {
-    top: 12%;
-    left: 68%;
-    transform: translate(-50%, -50%);
+  .software-des2,
+  .software-des3,
+  .software-des4 {
+    width: 135px;
+    height: 135px;
+    top: 18%;
+    left: -18%;
+    // transform: translate(-50%, -50%);
     font-size: 50px;
-    color: rgba(51, 51, 51, 0.2);
+    color: rgba(51, 51, 51, 0.24);
     font-family: 'ceyy';
-    border-radius: 24px;
-    box-shadow: $shadow1;
+    border-radius: 50%;
+    // box-shadow: $shadow1;
+    background: rgba(210, 227, 231, 0.35);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    backdrop-filter: blur(4.5px);
+    -webkit-backdrop-filter: blur(14.5px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: 666;
+  }
+  .software-des2 {
+    transform: scale(0.7);
+    backdrop-filter: blur(10px);
+  }
+  .software-des3 {
+    width: 280px;
+    height: 280px;
+    top: 8%;
+    left: 38%;
+    transform: scale(0.9);
+    // z-index: 1;
+    background: rgba(237, 242, 241, 0.35);
+    span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+  .software-des4 {
+    width: 100px;
+    height: 100px;
+    top: 78%;
+    left: 94%;
+    // z-index: 1;
+    opacity: 60%;
+    background: rgba(238, 207, 213, 0.35);
   }
 }
 
@@ -167,7 +261,7 @@ header {
   left: 30%;
   transform: translate(-50%, -50%);
   background: url('/static/img/2.jpg') no-repeat;
-  filter: contrast(84%);
+  // filter: contrast(84%);
   background-size: cover;
   border-radius: 14px;
 }
@@ -185,23 +279,6 @@ header {
   // box-shadow: 0px 0px 0px 0.26px rgba(51, 51, 51, 0.38);
   box-shadow: $shadow1;
 }
-
-// .glass {
-// 	width: 100%;
-// 	height: 50%;
-// 	position: absolute;
-// 	top: 30%;
-// 	left: 50%;
-// 	transform: translate(-50%, -50%);
-// 	background: url("/src/static/img/userin.png") no-repeat;
-// 	/*background: rgba(51, 51, 51, 0.4);*/
-// 	background-size: cover;
-// 	filter: blur(6px);
-// 	z-index: 66;
-// 	clip-path: polygon(0% 60%, 100% 60%, 100% 100%, 0% 100%);
-// 	box-shadow: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
-// }
-
 .pw-box {
   width: 100%;
   height: 100%;
@@ -211,6 +288,8 @@ header {
   justify-content: center;
   align-items: center;
   background: rgba(255, 255, 255, 0.94);
+  transform: translate(-300px);
+  opacity: 10%;
 }
 
 .pw-box-content {

@@ -111,6 +111,8 @@ const sortList = function (isUp: number, cur: number) {
 
 // 记录当前显示的key
 const curListKey = ref<number>(0)
+
+let activeTimer: any
 // 密码点击对应显示
 const pwActive = function (k: number) {
   try {
@@ -123,6 +125,14 @@ const pwActive = function (k: number) {
       curCode.userName = pwList[k].userName
       curCode.password = proxy.$AES_Decrypt(pwList[k].password)
       curCode.level = pwList[k].level
+      clearTimeout(activeTimer)
+      activeTimer = setTimeout(() => {
+        pwList[k].active = false
+        curCode.userName = 'user'
+        curCode.password = 'password'
+        curCode.level = 0
+        levelShow.value = false
+      }, 3000)
     } else {
       if (pwList[k]) pwList[k].active = false
       curCode.userName = 'user'
@@ -298,9 +308,9 @@ $shadow1: 3px 4px 12px 3px rgba(111, 109, 133, 0.09);
   width: 100%;
   height: 300px;
   display: flex;
-  flex-flow: row wrap;
+  flex-wrap: wrap;
   justify-content: space-between;
-  // align-items: flex-start;
+  align-content: flex-start;
   padding: 0 0.9em;
   font-family: 'ceyy';
   color: rgba(51, 51, 51, 0.9);
