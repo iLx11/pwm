@@ -7,7 +7,7 @@
       <view class="pw-box" :animation="boxAnimate">
         <div class="pw-box-content">
           <h1>请输入密码</h1>
-          <input :type="showPW.inpType" v-model.trim="inpValue" placeholder="输入后请按回车" @confirm="subPassword" :focus="isFocus" @blur="isFocus = false" @focus="isFocus = true"/>
+          <input :type="showPW.inpType" v-model.trim="inpValue" placeholder="输入后请按回车" @confirm="subPassword" :focus="isFocus" @blur="isFocus = false"/>
           <div class="showpw">
             <uni-icons :type="showPW.iconType" color="rgba(51,51,51,0.4)" size="30" @click="changePWStatus"></uni-icons>
             <span @click="resetPW">重置密码</span>
@@ -54,8 +54,16 @@ let boxAnimate = ref({})
 let cycle1Animation = ref({})
 let cycle2Animation = ref({})
 let cycle3Animation = ref({})
+// 输入框动画
 const boxShowAnimation = function () {
   proxy.animation.translate(0).opacity(1).step({
+    duration: 1000,
+    timingFunction: 'ease'
+  })
+  boxAnimate.value = proxy.animation.export()
+}
+const boxHideAnimation = () => {
+  proxy.animation.translate("-100%").opacity(1).step({
     duration: 1000,
     timingFunction: 'ease'
   })
@@ -91,6 +99,7 @@ const showInput = () => {
   isFocus.value = true;
 }
 const hideInput = () => {
+  boxHideAnimation()
   cycle1ShowAnimation()
   cycle2ShowAnimation("18%", "10%")
   cycle3ShowAnimation("52%", "66%")
@@ -277,7 +286,7 @@ header {
   overflow: hidden;
   z-index: 67;
   // box-shadow: 0px 0px 0px 0.26px rgba(51, 51, 51, 0.38);
-  box-shadow: $shadow1;
+  // box-shadow: $shadow1;
 }
 .pw-box {
   width: 100%;
